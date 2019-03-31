@@ -9,7 +9,7 @@ def cls():
   os.system("cls" if os.name == "nt" else "clear")
 
 MAIN_OPTIONS = ["Add New Entry", "Consult/Edit An Existing Entry", "Quit"]
-SEARCH_OPTIONS = ["Exact Date", "Range of Dates", "Exact Search", "Regex Pattern", "Return to Main Menu"]
+SEARCH_OPTIONS = ["Exact Date", "Range of Dates", "Exact Search", "Regex Pattern", "Time Spent", "Return to Main Menu"]
 CONSULT_OPTIONS = ["Next", "Previous", "Edit", "Delete", "Quit"]
 EDITION_OPTIONS = ["Date", "Title", "Time Spent", "Notes"]
 results = []
@@ -219,6 +219,23 @@ def find_entry_regex_pattern():
     return results
 
 
+def find_entry_time_spent():
+  while True:
+    time_spent_searched = input("Please enter time spent (rounded minutes) on assignment: ")
+    try:
+      test = int(time_spent_searched)
+      with open("work_log.csv") as csvfile:
+        log_reader = list(csv.reader(csvfile))
+        for line in log_reader:
+          if time_spent_searched == line[2]:
+            results.append(line)
+        return results
+        break
+    except ValueError:
+      cls()
+      print("Time spent is measured in rounded minutes, please try again\n")
+
+
 def display_results():
   count = 0
   while True:
@@ -257,6 +274,7 @@ def display_results():
         return results.clear()
         break
 
+
 print("Welcome to Work Log")
 print("-"*len("Welcome to Work Log"))
 # Implemented the differents menus as instances of Menu class.
@@ -284,6 +302,10 @@ while MainMenu.answer != "c":
         break
       elif SearchMenu.answer == "d":
         find_entry_regex_pattern()
+        display_results()
+        break
+      elif SearchMenu.answer == "e":
+        find_entry_time_spent()
         display_results()
         break
   else:
