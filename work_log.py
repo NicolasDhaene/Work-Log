@@ -48,7 +48,7 @@ def add_new_entry():
 
 
 def edit_entry(count):
-  EditionMenu = Menu(EDITION_OPTIONS)
+  EditionMenu = Menu(EDITION_OPTIONS, "key")
   EditionMenu.query_answer_horizontal()
   if EditionMenu.answer.upper() == "D":
     while True:
@@ -152,20 +152,18 @@ def delete_entry(count):
 
 
 def find_entry_exact_date():
-  while True:
-    exact_date_searched = input("Which date are you looking for? ")
-    try:
-      test = datetime.datetime.strptime(exact_date_searched, "%m/%d/%Y")
-      with open("work_log.csv") as csvfile:
-        log_reader = list(csv.reader(csvfile))
-        for line in log_reader:
-          if line[0] == exact_date_searched:
-            results.append(line)
-        return results
-        break
-    except ValueError:
-      cls()
-      print("Unrecognized date format, please try again. Don't forget to use the 'mm/dd/yyyy' format\n")
+  with open("work_log.csv") as csvfile:
+    log_reader = list(csv.reader(csvfile))
+    datelist = []
+    for line in log_reader:
+      if line[0] not in datelist:
+        datelist.append(line[0])
+    DateMenu = Menu(datelist, "value")
+    exact_date_searched = DateMenu.query_answer_vertical()
+    for line in log_reader:
+      if line[0] == exact_date_searched:
+        results.append(line)
+    return results
 
 
 def find_entry_range_date():
@@ -258,7 +256,7 @@ def display_results():
           available_options = [option for option in CONSULT_OPTIONS if option is not "Next"]
         else:
           available_options = CONSULT_OPTIONS
-      ConsultMenu = Menu(available_options)
+      ConsultMenu = Menu(available_options, "key")
       ConsultMenu.query_answer_horizontal()
       if ConsultMenu.answer.upper() == "N":
         count += 1
@@ -279,34 +277,51 @@ print("Welcome to Work Log")
 print("-"*len("Welcome to Work Log"))
 # Implemented the differents menus as instances of Menu class.
 # Each Menu runs in a while loop in order to be able to break in case of quit/return to main menu command
-MainMenu = Menu(MAIN_OPTIONS)
+      
+MainMenu = Menu(MAIN_OPTIONS, "key")
 while MainMenu.answer != "c":
   MainMenu.query_answer_vertical()
   if MainMenu.answer == "a":
     add_new_entry()
   elif MainMenu.answer == "b":
-    SearchMenu = Menu(SEARCH_OPTIONS)
-    while SearchMenu.answer != "e":
-      SearchMenu.query_answer_vertical()
-      if SearchMenu.answer == "a":
-        find_entry_exact_date()
-        display_results()
-        break
-      elif SearchMenu.answer == "b":
-        find_entry_range_date()
-        display_results()
-        break
-      elif SearchMenu.answer == "c":
-        find_entry_exact_search()
-        display_results()
-        break
-      elif SearchMenu.answer == "d":
-        find_entry_regex_pattern()
-        display_results()
-        break
-      elif SearchMenu.answer == "e":
-        find_entry_time_spent()
-        display_results()
-        break
-  else:
-    break
+    try:
+      with open("work_log.csv") as csvfile:
+        log_reader = list(csv.reader(csvfile))
+        SearchMenu = Menu(SEARCH_OPTIONS, "key")
+        if log_reader == []:
+          print("Currently no entry in log. Come back after you have added at least one entry.")
+          input("")
+          cls()
+        else:
+          while SearchMenu.answer != "e":
+            SearchMenu.query_answer_vertical()
+            if SearchMenu.answer == "a":
+              find_entry_exact_date()
+              display_results()
+              break
+            elif SearchMenu.answer == "b":
+              find_entry_range_date()
+              display_results()
+              break
+            elif SearchMenu.answer == "c":
+              find_entry_exact_search()
+              display_results()
+              break
+            elif SearchMenu.answer == "d":
+              find_entry_regex_pattern()
+              display_results()
+              break
+            elif SearchMenu.answer == "e":
+              find_entry_time_spent()
+              display_results()
+              break
+            else:
+              break
+          else:
+            break
+    except FileNotFoundError:
+      cls()
+      print("No entry in log at the moment")
+      input("")
+      cls()
+        

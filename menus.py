@@ -4,9 +4,10 @@ import os
 #Menu Class is to display and query answer based on a list of options
 #Menu Class can query answer horizontally (with key being the first letter of the option) or vertically (with key indenting from a,b,c,d,...) 
 class Menu():
-  def __init__(self, choices, *args, **kwargs):
+  def __init__(self, choices, output, *args, **kwargs):
     self.choices = choices
     self.answer = ""
+    self.output = output
 
   def query_answer_vertical(self):
     numbering = string.ascii_lowercase[0:len(self.choices)]
@@ -19,7 +20,7 @@ class Menu():
     while True:
       if trial > 0:
         print("That is not a valid choice, try again")
-      print("What would you like to do?")
+      print("Select one of the options below:")
       for key, value in options.items():
         print(key, ") ", value)
       self.answer = input(">")
@@ -31,7 +32,11 @@ class Menu():
       else:
         break
     cls()
-    return self.answer
+    if self.output == "key":
+      return self.answer
+    if self.output == "value":
+      return options[self.answer]
+
 
   def query_answer_horizontal(self):
     capital_letter = []
@@ -62,7 +67,7 @@ class Menu():
     while True:
       if trial > 0:
         print("That is not a valid choice, try again")
-      print("Select one of the options below?")
+      print("Select one of the options below:")
       print("".join(["{0}[{1}]{2}  ".format(value[0], key, value[1]) for key, value in options.items()]))
       self.answer = input(">")
       try:
@@ -73,4 +78,7 @@ class Menu():
       else:
         break
     cls()
-    return self.answer
+    if self.output == "key":
+      return self.answer
+    if self.output == "value":
+      return options[self.answer]
