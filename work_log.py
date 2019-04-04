@@ -47,7 +47,7 @@ def add_new_entry():
                 print("Title of the task: ", title_of_task)
         notes = input("Notes (Optional, you can leave this empty):")
         full_entry = [date_of_task, title_of_task, time_spent, notes]
-        with open("work_log.csv", "a") as csvFile:
+        with open("work_log.csv", "a", newline="\n") as csvFile:
             writer = csv.writer(csvFile)
             writer.writerow(full_entry)
             input("\nThe entry has been add. Press enter to continue")
@@ -72,7 +72,7 @@ def edit_entry(count):
                     log_reader.remove(results[count])
                     results[count][0] = new_date
                     log_reader.append(results[count])
-                with open("work_log.csv", "w") as csvfile:
+                with open("work_log.csv", "w", newline="\n") as csvfile:
                     log_writer = csv.writer(csvfile)
                     log_writer.writerows(log_reader)
                     input("\nThe entry has been modified.")
@@ -94,7 +94,7 @@ def edit_entry(count):
             log_reader.remove(results[count])
             results[count][1] = new_title
             log_reader.append(results[count])
-        with open("work_log.csv", "w") as csvfile:
+        with open("work_log.csv", "w", newline="\n") as csvfile:
             log_writer = csv.writer(csvfile)
             log_writer.writerows(log_reader)
             input("\nThe entry has been modified.")
@@ -114,7 +114,7 @@ def edit_entry(count):
                     log_reader.remove(results[count])
                     results[count][2] = new_time_spent
                     log_reader.append(results[count])
-                with open("work_log.csv", "w") as csvfile:
+                with open("work_log.csv", "w", newline="\n") as csvfile:
                     log_writer = csv.writer(csvfile)
                     log_writer.writerows(log_reader)
                     input("\nThe entry has been modified.")
@@ -136,7 +136,7 @@ def edit_entry(count):
             log_reader.remove(results[count])
             results[count][3] = new_notes
             log_reader.append(results[count])
-        with open("work_log.csv", "w") as csvfile:
+        with open("work_log.csv", "w", newline="\n") as csvfile:
             log_writer = csv.writer(csvfile)
             log_writer.writerows(log_reader)
         input("\nThe entry has been modified. Press enter to continue")
@@ -150,7 +150,7 @@ def delete_entry(count):
         with open("work_log.csv") as csvfile:
             log_reader = list(csv.reader(csvfile))
             log_reader.remove(results[count])
-        with open("work_log.csv", "w") as csvfile:
+        with open("work_log.csv", "w", newline="\n") as csvfile:
             log_writer = csv.writer(csvfile)
             log_writer.writerows(log_reader)
         input("\nYour entry has been deleted.")
