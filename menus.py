@@ -18,7 +18,7 @@ class Menu():
 
         while True:
             if trial > 0:
-                print("That is not a valid choice, try again")
+                print("That is not a valid choice, please try again")
             print("Select one of the options below:")
             for key, value in options.items():
                 print(key, ") ", value)
