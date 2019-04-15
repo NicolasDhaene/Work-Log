@@ -1,340 +1,294 @@
-import csv
 from menus import Menu
+from work_log_entry import WorkLogEntry
 import os
 import datetime
-import re
 
 
 def cls():
     os.system("cls" if os.name == "nt" else "clear")
 
-MAIN_OPTIONS = ["Add New Entry", "Consult/Edit An Existing Entry", "Quit"]
-SEARCH_OPTIONS = ["Exact Date",
+
+MAIN_OPTIONS = ["Add New Entry", "Lookup Entry", "Quit"]
+LOOKUP_OPTIONS = ["Employee",
+                  "Exact Date",
                   "Range of Dates",
-                  "Exact Search",
-                  "Regex Pattern",
+                  "Task or Notes",
                   "Time Spent",
                   "Return to Main Menu"]
 CONSULT_OPTIONS = ["Next", "Previous", "Edit", "Delete", "Quit"]
 EDITION_OPTIONS = ["Date", "Title", "Time Spent", "Notes"]
-results = []
 
+
+def is_valid_date(date):
+    try:
+        datetime.datetime.strptime(date, "%m/%d/%Y")
+        return True
+    except ValueError:
+        print("Unrecognized date format,",
+              "please try again.",
+              "Don't forget to use the 'mm/dd/yyyy' format ")
+        return False
+
+        
+def is_valid_integer(time_spent):
+    try:
+        int(time_spent)
+        return True
+    except ValueError:
+        print("Time spent is measured in rounded minutes,",
+              "please try again\n")
+        return False
+
+def get_employee_name():
+    while True:
+        employee_name = input("Employee Name: ")
+        if len(employee_name) != 0:
+            return employee_name
+        else:
+            print("You need to type an employee name")
+
+def get_task_date():
+    while True:
+        date = input("Date (mm/dd/yyyy) of the task: ")
+        if is_valid_date(date):
+            date = datetime.datetime.strptime(date, "%m/%d/%Y")
+            return date
+            break
+
+def get_task_name():
+        while True:
+            task_name = input("Task Name: ")
+            if len(task_name) != 0:
+                return task_name
+            else:
+                print("You need to type a task name")
+
+def get_time_spent():
+    while True:
+        time_spent = input("Time spent (rounded minutes): ")
+        if is_valid_integer(time_spent):
+            time_spent = int(time_spent)
+            return time_spent
+            break
+
+def get_notes():
+    notes = input("Notes (optional): ")
+    return notes
 
 def add_new_entry():
-    while True:
+    employee_name = get_employee_name()
+    date = get_task_date()
+    task_name = get_task_name()
+    time_spent = get_time_spent()
+    notes = get_notes()
+    WorkLogEntry.create(employee=employee_name,
+                        date=date,
+                        task_name=task_name,
+                        time_spent=time_spent,
+                        notes=notes)
+    input("\nThe entry has been add. Press enter to continue")
+    cls()
+
+def employee():
+    employee_searched = input("Which Employee are you looking for? ")
+    employee_list = []
+    search1 = WorkLogEntry.select().where(
+        WorkLogEntry.employee.contains(employee_searched))
+    for each in search1:
+        if each.employee not in employee_list:
+            employee_list.append(each.employee)
+    if len(employee_list) > 1:
         cls()
-        while True:
-            date_of_task = input("Date of the task: ")
-            try:
-                datetime.datetime.strptime(date_of_task, "%m/%d/%Y")
-                break
-            except ValueError:
-                cls()
-                print("Unrecognized date format,",
-                      "please try again.",
-                      "Don't forget to use the 'mm/dd/yyyy' format ")
-        title_of_task = input("Title of the task: ")
-        while True:
-            time_spent = input("Time spent (rounded minutes): ")
-            try:
-                int(time_spent)
-                break
-            except ValueError:
-                cls()
-                print("Time spent is measured in rounded minutes,",
-                      "please try again\n")
-                print("Date of the task: ", date_of_task)
-                print("Title of the task: ", title_of_task)
-        notes = input("Notes (Optional, you can leave this empty):")
-        full_entry = [date_of_task, title_of_task, time_spent, notes]
-        with open("work_log.csv", "a", newline="\n") as csvFile:
-            writer = csv.writer(csvFile)
-            writer.writerow(full_entry)
-            input("\nThe entry has been add. Press enter to continue")
+        print("Which", employee_searched, "more specifically?\n")
+        EmployeeMenu = Menu(employee_list, "value", "asis")
+        employee_searched_specific = EmployeeMenu.query_answer_vertical()
+        return WorkLogEntry.select().where(
+            WorkLogEntry.employee == employee_searched_specific)
+    else:
+        return WorkLogEntry.select().where(
+            WorkLogEntry.employee.contains(employee_searched))
+
+def exact_date():
+    while True:
+        exact_date = input("Which date (mm/dd/yyyy) are you looking for? ")
+        if is_valid_date(exact_date):
+            exact_date = datetime.datetime.strptime(exact_date, "%m/%d/%Y")
             cls()
             break
+    return WorkLogEntry.select().where(WorkLogEntry.date == exact_date)    
 
-
-def edit_entry(count):
-    EditionMenu = Menu(EDITION_OPTIONS, "key")
-    EditionMenu.query_answer_horizontal()
-    if EditionMenu.answer.upper() == "D":
-        while True:
-            print("Date: ", results[count][0])
-            print("Title: ", results[count][1])
-            print("Time Spent: ", results[count][2])
-            print("Notes: ", results[count][3], "\n")
-            new_date = input("NEW Date for this task: ")
-            try:
-                datetime.datetime.strptime(new_date, "%m/%d/%Y")
-                with open("work_log.csv") as csvfile:
-                    log_reader = list(csv.reader(csvfile))
-                    log_reader.remove(results[count])
-                    results[count][0] = new_date
-                    log_reader.append(results[count])
-                with open("work_log.csv", "w", newline="\n") as csvfile:
-                    log_writer = csv.writer(csvfile)
-                    log_writer.writerows(log_reader)
-                    input("\nThe entry has been modified.")
-                    cls()
-                return results.clear()
-                break
-            except ValueError:
-                cls()
-                print("Unrecognized date format, please try again.",
-                      "Don't forget to use the 'mm/dd/yyyy' format\n")
-    elif EditionMenu.answer.upper() == "T":
-        print("Date: ", results[count][0])
-        print("Title: ", results[count][1])
-        print("Time Spent: ", results[count][2])
-        print("Notes: ", results[count][3], "\n")
-        new_title = input("NEW Title for this task: ")
-        with open("work_log.csv") as csvfile:
-            log_reader = list(csv.reader(csvfile))
-            log_reader.remove(results[count])
-            results[count][1] = new_title
-            log_reader.append(results[count])
-        with open("work_log.csv", "w", newline="\n") as csvfile:
-            log_writer = csv.writer(csvfile)
-            log_writer.writerows(log_reader)
-            input("\nThe entry has been modified.")
-        cls()
-        return results.clear()
-    elif EditionMenu.answer.upper() == "I":
-        while True:
-            print("Date: ", results[count][0])
-            print("Title: ", results[count][1])
-            print("Time Spent: ", results[count][2])
-            print("Notes: ", results[count][3], "\n")
-            new_time_spent = input("NEW Time Spent for this task: ")
-            try:
-                int(new_time_spent)
-                with open("work_log.csv") as csvfile:
-                    log_reader = list(csv.reader(csvfile))
-                    log_reader.remove(results[count])
-                    results[count][2] = new_time_spent
-                    log_reader.append(results[count])
-                with open("work_log.csv", "w", newline="\n") as csvfile:
-                    log_writer = csv.writer(csvfile)
-                    log_writer.writerows(log_reader)
-                    input("\nThe entry has been modified.")
-                cls()
-                return results.clear()
-                break
-            except ValueError:
-                cls()
-                print("Time Spent is measured in rounded minutes,",
-                      "please try again\n")
-    elif EditionMenu.answer.upper() == "N":
-        print("Date: ", results[count][0])
-        print("Title: ", results[count][1])
-        print("Time Spent: ", results[count][2])
-        print("Notes: ", results[count][3], "\n")
-        new_notes = input("NEW Notes for this task: ")
-        with open("work_log.csv") as csvfile:
-            log_reader = list(csv.reader(csvfile))
-            log_reader.remove(results[count])
-            results[count][3] = new_notes
-            log_reader.append(results[count])
-        with open("work_log.csv", "w", newline="\n") as csvfile:
-            log_writer = csv.writer(csvfile)
-            log_writer.writerows(log_reader)
-        input("\nThe entry has been modified. Press enter to continue")
-        cls()
-        return results.clear()
-
-
-def delete_entry(count):
-    confirmation = input("\nDelete this entry?\nEnter \"Y\" to confirm. ")
-    if confirmation.upper() == "Y":
-        with open("work_log.csv") as csvfile:
-            log_reader = list(csv.reader(csvfile))
-            log_reader.remove(results[count])
-        with open("work_log.csv", "w", newline="\n") as csvfile:
-            log_writer = csv.writer(csvfile)
-            log_writer.writerows(log_reader)
-        input("\nYour entry has been deleted.")
-        cls()
-        return results.clear()
-    else:
-        cls()
-        return results.clear()
-
-
-def find_entry_exact_date():
-    with open("work_log.csv") as csvfile:
-        log_reader = list(csv.reader(csvfile))
-        datelist = []
-        for line in log_reader:
-            if line[0] not in datelist:
-                datelist.append(line[0])
-        DateMenu = Menu(datelist, "value")
-        exact_date_searched = DateMenu.query_answer_vertical()
-        for line in log_reader:
-            if line[0] == exact_date_searched:
-                results.append(line)
-        return results
-
-
-def find_entry_range_date():
+def range_of_dates():
     while True:
         range1_date = input("From which date are you looking for? ")
-        try:
+        if is_valid_date(range1_date):
             range1 = datetime.datetime.strptime(range1_date, "%m/%d/%Y")
-            break
-        except ValueError:
             cls()
-            print("Unrecognized date format, please try again.",
-                  "Don't forget to use the 'mm/dd/yyyy' format\n")
+            break
     while True:
         range2_date = input("To which date are you looking for? ")
-        try:
+        if is_valid_date(range2_date):
             range2 = datetime.datetime.strptime(range2_date, "%m/%d/%Y")
             cls()
             break
-        except ValueError:
-            cls()
-            print("Unrecognized date format, please try again.",
-                  "Don't forget to use the 'mm/dd/yyyy' format\n")
-            print("From which date (mm/dd/yyyy) are you looking for? ",
-                  range1_date)
-    with open("work_log.csv") as csvfile:
-        log_reader = list(csv.reader(csvfile))
-        for line in log_reader:
-            linedate = datetime.datetime.strptime(line[0], "%m/%d/%Y")
-            if range1 <= linedate <= range2:
-                results.append(line)
-        return results
-
-
-def find_entry_exact_search():
+    return WorkLogEntry.select().where(
+        (WorkLogEntry.date >= range1) & (WorkLogEntry.date <= range2))
     cls()
-    title_exact_search = input("What activity are you looking for? ")
-    with open("work_log.csv") as csvfile:
-        log_reader = list(csv.reader(csvfile))
-        for line in log_reader:
-            if title_exact_search == line[1]:
-                results.append(line)
-        return results
 
-
-def find_entry_regex_pattern():
+def task_or_notes():
+    term_searched = input("Enter search term: ")
+    return WorkLogEntry.select().where(
+        (WorkLogEntry.task_name.contains(term_searched)) |
+        (WorkLogEntry.notes.contains(term_searched)))
     cls()
-    regex_pattern = input("Please enter Regex pattern: ")
-    with open("work_log.csv") as csvfile:
-        log_reader = list(csv.reader(csvfile))
-        for line in log_reader:
-            string = ''.join([line[1], line[3]])
-            if re.findall(regex_pattern, string):
-                results.append(line)
-        return results
 
 
-def find_entry_time_spent():
+def time_spent():
     while True:
-        time_spent = input("Please enter time spent on assignment: ")
-        try:
-            int(time_spent)
-            with open("work_log.csv") as csvfile:
-                log_reader = list(csv.reader(csvfile))
-                for line in log_reader:
-                    if time_spent == line[2]:
-                        results.append(line)
-            return results
+        time_spent = input("How long was the task you are looking for?")
+        if is_valid_integer(time_spent):
             break
-        except ValueError:
-            cls()
-            print("Time spent is measured in rounded minutes,",
-                  "please try again\n")
+    return WorkLogEntry.select().where(WorkLogEntry.time_spent == time_spent)
+    cls()
 
+def display_entry(results, count):
+    print("This is result {} of {}".format(count+1, len(results)),
+          "matching your search criteria:\n")
+    print("Employee: ", results[count].employee)
+    print("Date: ", results[count].date)
+    print("Task: ", results[count].task_name)
+    print("Time Spent: ", results[count].time_spent)
+    print("Notes: ", results[count].notes, "\n")
 
-def display_results():
+def check_if_no_result(results):
+    if not results:
+        return True
+        print("No result found. Sorry\n")
+        input("")
+        cls()
+    else:
+        return False
+
+def define_navigation_options(results, count):
+    if len(results) == 1:
+        available_options = [option for option in CONSULT_OPTIONS
+                             if option != "Previous" and
+                             option != "Next"]
+    else:
+        if count == 0:
+            available_options = [option for option in CONSULT_OPTIONS
+                                 if option != "Previous"]
+        elif count == len(results)-1:
+            available_options = [option for option in CONSULT_OPTIONS
+                                 if option != "Next"]
+        else:
+            available_options = CONSULT_OPTIONS
+    return available_options
+
+def navigate_results(results):
     count = 0
     while True:
-        if not results:
-            print("No result found. Sorry\n")
+        if check_if_no_result(results):
             break
         else:
             cls()
-            print("We found {}".format(len(results)),
-                  " item(s) in the log matching your search criteria\n")
-            print("Date: ", results[count][0])
-            print("Title: ", results[count][1])
-            print("Time Spent: ", results[count][2])
-            print("Notes: ", results[count][3], "\n")
-            if len(results) == 1:
-                available_options = [option for option in CONSULT_OPTIONS
-                                     if option != "Previous" and
-                                     option != "Next"]
-            else:
-                if count == 0:
-                    available_options = [option for option in CONSULT_OPTIONS
-                                         if option != "Previous"]
-                elif count == len(results)-1:
-                    available_options = [option for option in CONSULT_OPTIONS
-                                         if option != "Next"]
-                else:
-                    available_options = CONSULT_OPTIONS
-            ConsultMenu = Menu(available_options, "key")
+            display_entry(results, count)
+            ConsultMenu = Menu(define_navigation_options(results, count), "key", "lc")
             ConsultMenu.query_answer_horizontal()
             if ConsultMenu.answer.upper() == "N":
                 count += 1
             elif ConsultMenu.answer.upper() == "P":
                 count -= 1
             elif ConsultMenu.answer.upper() == "E":
-                edit_entry(count)
+                edit_entry(results[count])
                 break
             elif ConsultMenu.answer.upper() == "D":
-                delete_entry(count)
+                delete_entry(results[count])
                 break
             elif ConsultMenu.answer.upper() == "Q":
-                return results.clear()
                 break
 
+def delete_entry(entry):
+    print("Employee: ", entry.employee)
+    print("Date: ", entry.date)
+    print("Task: ", entry.task_name)
+    print("Time Spent: ", entry.time_spent)
+    print("Notes: ", entry.notes, "\n")
+    confirmation = input("Delete this entry?\nEnter \"Y\" to confirm. ")
+    if confirmation.upper() == "Y":
+        entry.delete_instance()
+        input("\nYour entry has been deleted.")
+    cls()
 
-print("Welcome to Work Log")
-print("-"*len("Welcome to Work Log"))
-MainMenu = Menu(MAIN_OPTIONS, "key")
-while MainMenu.answer != "c":
-    MainMenu.query_answer_vertical()
-    if MainMenu.answer == "a":
-        add_new_entry()
-    elif MainMenu.answer == "b":
-        try:
-            with open("work_log.csv") as csvfile:
-                log_reader = list(csv.reader(csvfile))
-                SearchMenu = Menu(SEARCH_OPTIONS, "key")
-                if log_reader == []:
-                    print("Currently no entry in log.")
-                    input("")
-                    cls()
-                else:
-                    while SearchMenu.answer != "e":
-                        SearchMenu.query_answer_vertical()
-                        if SearchMenu.answer == "a":
-                            find_entry_exact_date()
-                            display_results()
-                            break
-                        elif SearchMenu.answer == "b":
-                            find_entry_range_date()
-                            display_results()
-                            break
-                        elif SearchMenu.answer == "c":
-                            find_entry_exact_search()
-                            display_results()
-                            break
-                        elif SearchMenu.answer == "d":
-                            find_entry_regex_pattern()
-                            display_results()
-                            break
-                        elif SearchMenu.answer == "e":
-                            find_entry_time_spent()
-                            display_results()
-                            break
-                        else:
-                            break
-        except FileNotFoundError:
-            cls()
-            print("No entry in log at the moment")
-            input("")
-            cls()
+
+def edit_entry(entry):
+    descriptionlist = ["Employee",
+                       "Date",
+                       "Task",
+                       "Time Spent",
+                       "Notes"]
+    count = 0
+    for fields in descriptionlist:
+        entrylist = [entry.employee,
+                     entry.date,
+                     entry.task_name,
+                     entry.time_spent,
+                     entry.notes]
+        count2 = 0
+        for item in range(count+1):
+            print(descriptionlist[count2], " :", entrylist[count2])
+            count2 += 1
+        question = ("\n" +
+                    "Would you like to update the " +
+                    descriptionlist[count] +
+                    " field ? (Y/N) ")
+        if input(question).upper() == "Y":
+            if descriptionlist[count] == "Date":
+                while True:
+                    new_value = input("New value? ")
+                    if is_valid_date(new_value):
+                        entrylist[count] = new_value
+                        cls()
+                        break
+            elif descriptionlist[count] == "Time Spent":
+                while True:
+                    new_value = input("New value? ")
+                    if is_valid_integer(new_value):
+                        entrylist[count] = new_value
+                        cls()
+                        break
+            else:
+                new_value = input("New value? ")
+                entrylist[count] = new_value
+            entry.employee = entrylist[0]
+            entry.date = entrylist[1]
+            entry.task_name = entrylist[2]
+            entry.time_spent = entrylist[3]
+            entry.notes = entrylist[4]
+            entry.save()
+        count += 1
+        cls()
+
+    print("Entry was updated to:\n")
+    count = 0
+    for fields in descriptionlist:
+        print(descriptionlist[count], " :", entrylist[count])
+        count += 1
+    input("")
+    cls()
+
+
+if __name__ == "__main__":
+    cls()
+    print("Welcome to Work Log - Now With Database!")
+    print("-"*len("Welcome to Work Log - Now With Database!"))
+    MainMenu = Menu(MAIN_OPTIONS, "key", "lc")
+    while MainMenu.answer != "c":
+        MainMenu.query_answer_vertical()
+        if MainMenu.answer == "a":
+            add_new_entry()
+        elif MainMenu.answer == "b":
+            LookupMenu = Menu(LOOKUP_OPTIONS, "value", "lc")
+            try:
+                navigate_results(eval(LookupMenu.query_answer_vertical())())
+            except NameError:
+                pass

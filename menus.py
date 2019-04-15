@@ -3,10 +3,11 @@ import os
 
 
 class Menu():
-    def __init__(self, choices, output, *args, **kwargs):
+    def __init__(self, choices, output, outputstyle, *args, **kwargs):
         self.choices = choices
         self.answer = ""
         self.output = output
+        self.outputstyle = outputstyle
 
     def query_answer_vertical(self):
         numbering = string.ascii_lowercase[0:len(self.choices)]
@@ -34,7 +35,10 @@ class Menu():
         if self.output == "key":
             return self.answer
         if self.output == "value":
-            return options[self.answer]
+            if self.outputstyle == "asis":
+                return options[self.answer]
+            else:
+                return options[self.answer].replace(" ", "_").lower()
 
     def query_answer_horizontal(self):
         capital_letter = []
@@ -73,11 +77,11 @@ class Menu():
                 options[self.answer.upper()]
             except KeyError:
                 trial += 1
-                cls()
             else:
                 break
         cls()
-        if self.output == "key":
-            return self.answer
         if self.output == "value":
-            return options[self.answer]
+            if self.outputstyle == "asis":
+                return options[self.answer]
+            else:
+                return options[self.answer].replace(" ", "_").lower()
